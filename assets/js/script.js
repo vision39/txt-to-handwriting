@@ -3,7 +3,7 @@ const canvas = document.getElementById('outputCanvas');
 const ctx = canvas.getContext('2d');
 const textInput = document.getElementById('textInput');
 const fontSelect = document.getElementById('fontSelect');
-const fontSizeInput = document.getElementById('fontSize');
+const headingSelect = document.getElementById('headingSelect');
 const inkColorInput = document.getElementById('inkColor');
 const paperTypeSelect = document.getElementById('paperType');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -13,17 +13,17 @@ const generateBtn = document.getElementById('generateBtn');
 // Sidebar elements
 const paperGrid = document.getElementById('paperGrid');
 const fontGrid = document.getElementById('fontGrid');
-const fontSizeDown = document.getElementById('fontSizeDown');
-const fontSizeUp = document.getElementById('fontSizeUp');
 
 // Floating toolbar
 const floatingToolbar = document.getElementById('floatingToolbar');
 const floatingMove = document.getElementById('floatingMove');
 const floatingColor = document.getElementById('floatingColor');
 const floatingReset = document.getElementById('floatingReset');
-const floatingSizeDown = document.getElementById('floatingSizeDown');
-const floatingSizeUp = document.getElementById('floatingSizeUp');
-const floatingSize = document.getElementById('floatingSize');
+
+// Editor toolbar buttons
+const btnUnderline = document.getElementById('btnUnderline');
+const btnBulletList = document.getElementById('btnBulletList');
+const btnNumberList = document.getElementById('btnNumberList');
 
 // Preload background images
 const bg1Image = new Image();
@@ -40,10 +40,71 @@ const PAPER_PADDING_RIGHT = 30;
 const PAPER_PADDING_TOP = 80;
 
 // ==========================================
+// Editor Formatting Toolbar
+// ==========================================
+
+btnUnderline.addEventListener('click', () => {
+    document.execCommand('underline', false, null);
+    textInput.focus();
+    updateToolbarState();
+});
+
+btnBulletList.addEventListener('click', () => {
+    document.execCommand('insertUnorderedList', false, null);
+    textInput.focus();
+    updateToolbarState();
+});
+
+btnNumberList.addEventListener('click', () => {
+    document.execCommand('insertOrderedList', false, null);
+    textInput.focus();
+    updateToolbarState();
+});
+
+
+headingSelect.addEventListener('change', () => {
+    document.execCommand('formatBlock', false, headingSelect.value);
+    textInput.focus();
+    updateToolbarState();
+});
+
+// Update toolbar active states based on current selection
+function updateToolbarState() {
+    btnUnderline.classList.toggle('active', document.queryCommandState('underline'));
+    btnBulletList.classList.toggle('active', document.queryCommandState('insertUnorderedList'));
+    btnNumberList.classList.toggle('active', document.queryCommandState('insertOrderedList'));
+    
+    // Update heading select
+    let format = document.queryCommandValue('formatBlock') || 'p';
+    // queryCommandValue might return 'h1', 'H1', 'p', etc.
+    const validFormats = ['h1', 'h2', 'h3', 'p'];
+    format = format.toLowerCase();
+    
+    if (validFormats.includes(format)) {
+        headingSelect.value = format;
+    } else {
+        headingSelect.value = 'p';
+    }
+}
+
+// Listen for selection changes to update toolbar
+document.addEventListener('selectionchange', () => {
+    if (textInput.contains(document.activeElement) || textInput === document.activeElement) {
+        updateToolbarState();
+    }
+});
+
+// Paste plain text only
+textInput.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+});
+
+// ==========================================
 // Sidebar: Paper & Font Selection
 // ==========================================
 
-// Paper thumbnail clicks
 paperGrid.addEventListener('click', (e) => {
     const thumb = e.target.closest('.paper-thumb');
     if (!thumb) return;
@@ -53,7 +114,6 @@ paperGrid.addEventListener('click', (e) => {
     syncInputPageStyles();
 });
 
-// Font thumbnail clicks
 fontGrid.addEventListener('click', (e) => {
     const thumb = e.target.closest('.font-thumb');
     if (!thumb) return;
@@ -63,20 +123,7 @@ fontGrid.addEventListener('click', (e) => {
     syncInputPageStyles();
 });
 
-// Font size +/- buttons
-fontSizeDown.addEventListener('click', () => {
-    const current = parseInt(fontSizeInput.value) || 28;
-    fontSizeInput.value = Math.max(16, current - 2);
-    syncInputPageStyles();
-});
-fontSizeUp.addEventListener('click', () => {
-    const current = parseInt(fontSizeInput.value) || 28;
-    fontSizeInput.value = Math.min(64, current + 2);
-    syncInputPageStyles();
-});
-fontSizeInput.addEventListener('input', () => {
-    syncInputPageStyles();
-});
+
 
 // ==========================================
 // Canvas Drawing Functions
@@ -102,7 +149,6 @@ function drawPaperBackground(lineSpacing) {
     const paperVal = paperTypeSelect.value;
 
     if (paperVal === 'bg1') {
-        // Draw the photo background stretched to fill the canvas
         if (bg1Image.complete && bg1Image.naturalWidth > 0) {
             ctx.drawImage(bg1Image, 0, 0, canvas.width, canvas.height);
         }
@@ -134,24 +180,144 @@ function drawPaperBackground(lineSpacing) {
     }
 }
 
+// ==========================================
+// Rich Text → Structured Paragraphs Parser
+// ==========================================
+
+function parseEditorContent() {
+    // Parse the contenteditable HTML into structured paragraph objects
+    const items = [];
+    const childNodes = textInput.childNodes;
+
+    function extractTextSegments(node) {
+        // Returns array of { text, underline } segments
+        const segments = [];
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (node.textContent) {
+                segments.push({ text: node.textContent, underline: false });
+            }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName.toLowerCase();
+            if (tag === 'br') {
+                segments.push({ text: '\n', underline: false });
+            } else if (tag === 'u') {
+                // Underlined content
+                node.childNodes.forEach(child => {
+                    const childSegs = extractTextSegments(child);
+                    childSegs.forEach(s => { s.underline = true; });
+                    segments.push(...childSegs);
+                });
+            } else {
+                node.childNodes.forEach(child => {
+                    segments.push(...extractTextSegments(child));
+                });
+            }
+        }
+        return segments;
+    }
+
+    function processNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent;
+            if (text) {
+                const lines = text.split('\n');
+                lines.forEach((line, i) => {
+                    if (line || i < lines.length - 1) {
+                        items.push({ type: 'text', text: line, segments: [{ text: line, underline: false }] });
+                    }
+                });
+            }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const tag = node.tagName.toLowerCase();
+
+            if (tag === 'br') {
+                items.push({ type: 'text', text: '', segments: [] });
+            } else if (tag === 'ul') {
+                node.querySelectorAll(':scope > li').forEach(li => {
+                    const segs = extractTextSegments(li);
+                    const text = segs.map(s => s.text).join('');
+                    items.push({ type: 'bullet', text, segments: segs });
+                });
+            } else if (tag === 'ol') {
+                let num = 1;
+                node.querySelectorAll(':scope > li').forEach(li => {
+                    const segs = extractTextSegments(li);
+                    const text = segs.map(s => s.text).join('');
+                    items.push({ type: 'number', num, text, segments: segs });
+                    num++;
+                });
+            } else if (['h1', 'h2', 'h3', 'div', 'p', 'span', 'u'].includes(tag)) {
+                // Inline elements — extract segments preserving underline
+                const segs = extractTextSegments(node);
+                const text = segs.map(s => s.text).join('');
+                const textSize = ['h1', 'h2', 'h3'].includes(tag) ? tag : 'p';
+                // Split on newlines
+                const lines = text.split('\n');
+                if (lines.length > 1) {
+                    lines.forEach(line => {
+                        items.push({ type: 'text', textSize, text: line, segments: [{ text: line, underline: tag === 'u' }] });
+                    });
+                } else {
+                    if (['h1', 'h2', 'h3', 'div', 'p'].includes(tag)) {
+                        items.push({ type: 'text', textSize, text, segments: segs });
+                    } else {
+                        // Inline: merge into last item or create new
+                        if (items.length > 0 && items[items.length - 1].type === 'text') {
+                            items[items.length - 1].text += text;
+                            items[items.length - 1].segments.push(...segs);
+                        } else {
+                            items.push({ type: 'text', textSize, text, segments: segs });
+                        }
+                    }
+                }
+            } else {
+                // Other block elements — recurse
+                node.childNodes.forEach(child => processNode(child));
+            }
+        }
+    }
+
+    childNodes.forEach(child => processNode(child));
+    return items;
+}
+
+// ==========================================
+// Canvas Rendering: Draw Paragraphs with Rich Format
+// ==========================================
+
 function processAndDrawParagraphs(maxWidth, globalLineSpacing, globalFontSize) {
     const fontFamily = `"${fontSelect.value}", cursive`;
     let currentBaseY = PAPER_PADDING_TOP - (globalFontSize * 0.2);
     const startX = PAPER_PADDING_LEFT + 10;
+    
+    // Base sizes for headings
+    const sizeMap = { h1: 48, h2: 36, h3: 28, p: 24 };
 
     paragraphsState.forEach((para, index) => {
-        const paraFontSize = para.fontSize || globalFontSize;
-        const paraLineSpacing = para.fontSize ? (para.fontSize * 1.4) : globalLineSpacing;
+        const baseSize = sizeMap[para.textSize] || sizeMap['p'];
+        const paraFontSize = baseSize;
+        const paraLineSpacing = paraFontSize * 1.4;
 
-        if (!para.text || para.text.length === 0) {
+
+        // Text / bullet / number items
+        if ((!para.text || para.text.length === 0) && para.type === 'text') {
             currentBaseY += paraLineSpacing;
             para.boundingBox = null;
             return;
         }
 
+        // Build display text with prefix
+        let prefix = '';
+        if (para.type === 'bullet') prefix = '•  ';
+        else if (para.type === 'number') prefix = `${para.num || 1}.  `;
+
+        const fullText = prefix + (para.text || '');
+        const segments = para.segments || [{ text: para.text, underline: false }];
+
         ctx.font = `${paraFontSize}px ${fontFamily}`;
-        
-        const words = para.text.split(' ');
+
+        // Word-wrap the full text
+        const words = fullText.split(' ');
         let currentLine = '';
         let lines = [];
 
@@ -172,9 +338,77 @@ function processAndDrawParagraphs(maxWidth, globalLineSpacing, globalFontSize) {
         const paraStartY = currentBaseY + para.offsetY;
         const height = lines.length * paraLineSpacing;
 
+        // Draw text lines
         ctx.fillStyle = para.color || inkColorInput.value;
+
+        // Check whether any segment is underlined
+        const hasUnderline = segments.some(s => s.underline);
+
         lines.forEach((line, i) => {
-            ctx.fillText(line, paraStartX, paraStartY + (i * paraLineSpacing));
+            const lineY = paraStartY + (i * paraLineSpacing);
+            ctx.fillText(line, paraStartX, lineY);
+
+            // Draw underline if applicable
+            if (hasUnderline) {
+                // Simple approach: underline lines that contain underlined text
+                const lineWidth = ctx.measureText(line).width;
+
+                // Find underlined portions. For simplicity, if the paragraph's raw text
+                // has underline segments, underline the rendered lines proportionally.
+                const rawText = para.text || '';
+                const underlinedChars = new Set();
+                let charIdx = 0;
+                segments.forEach(seg => {
+                    for (let c = 0; c < seg.text.length; c++) {
+                        if (seg.underline) underlinedChars.add(charIdx);
+                        charIdx++;
+                    }
+                });
+
+                // Determine which characters of this line are underlined
+                // Map line back to fullText chars
+                let lineStartInFull = 0;
+                for (let l = 0; l < i; l++) lineStartInFull += lines[l].length;
+                const lineText = line;
+                const prefixLen = prefix.length;
+
+                // Draw underline spans
+                let spanStart = -1;
+                for (let ch = 0; ch <= lineText.length; ch++) {
+                    const fullIdx = lineStartInFull + ch;
+                    const rawIdx = fullIdx - prefixLen;
+                    const isUL = rawIdx >= 0 && rawIdx < rawText.length && underlinedChars.has(rawIdx);
+
+                    if (isUL && spanStart === -1) {
+                        spanStart = ch;
+                    } else if (!isUL && spanStart !== -1) {
+                        // Draw underline for this span
+                        const spanText = lineText.substring(0, spanStart);
+                        const spanEndText = lineText.substring(0, ch);
+                        const x1 = paraStartX + ctx.measureText(spanText).width;
+                        const x2 = paraStartX + ctx.measureText(spanEndText).width;
+                        ctx.beginPath();
+                        ctx.strokeStyle = para.color || inkColorInput.value;
+                        ctx.lineWidth = Math.max(1, paraFontSize * 0.06);
+                        ctx.moveTo(x1, lineY + 3);
+                        ctx.lineTo(x2, lineY + 3);
+                        ctx.stroke();
+                        spanStart = -1;
+                    }
+                }
+                // Close final span
+                if (spanStart !== -1) {
+                    const spanText = lineText.substring(0, spanStart);
+                    const x1 = paraStartX + ctx.measureText(spanText).width;
+                    const x2 = paraStartX + ctx.measureText(lineText.trimEnd()).width;
+                    ctx.beginPath();
+                    ctx.strokeStyle = para.color || inkColorInput.value;
+                    ctx.lineWidth = Math.max(1, paraFontSize * 0.06);
+                    ctx.moveTo(x1, lineY + 3);
+                    ctx.lineTo(x2, lineY + 3);
+                    ctx.stroke();
+                }
+            }
         });
 
         para.boundingBox = {
@@ -185,29 +419,31 @@ function processAndDrawParagraphs(maxWidth, globalLineSpacing, globalFontSize) {
         };
 
         if (index === selectedParaIndex) {
-            ctx.save();
-            ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
-            ctx.fillRect(para.boundingBox.x, para.boundingBox.y, para.boundingBox.w, para.boundingBox.h);
-            ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
-            ctx.setLineDash([]);
-            ctx.lineWidth = 2;
-            ctx.strokeRect(para.boundingBox.x, para.boundingBox.y, para.boundingBox.w, para.boundingBox.h);
-            ctx.restore();
+            drawSelectionHighlight(para.boundingBox);
         }
 
         currentBaseY += height;
     });
 }
 
+function drawSelectionHighlight(box) {
+    ctx.save();
+    ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+    ctx.restore();
+}
+
 // ==========================================
-// Input Page Styling (WYSIWYG)
+// Input Page Styling
 // ==========================================
 
 function syncInputPageStyles() {
-    const fontSize = parseInt(fontSizeInput.value) || 28;
+    const fontSize = 24; // base paragraph size
     const fontFamily = `"${fontSelect.value}", cursive`;
-
-    // Fixed line spacing for ruled/grid lines (independent of font size)
     const FIXED_LINE_SPACING = 36;
 
     textInput.style.fontSize = `${fontSize}px`;
@@ -223,28 +459,49 @@ function syncInputPageStyles() {
 function renderCanvas() {
     if (!isCanvasGenerated) return;
 
-    const fontSize = parseInt(fontSizeInput.value) || 28;
-    const lineSpacing = fontSize * 1.4;
+    // We use a base size for spacing scale calculations.
+    const baseFontSize = 24;
+    const baseLineSpacing = baseFontSize * 1.4;
     const fontFamily = `"${fontSelect.value}", cursive`;
 
-    drawPaperBackground(lineSpacing);
-    ctx.font = `${fontSize}px ${fontFamily}`;
+    drawPaperBackground(baseLineSpacing);
+    ctx.font = `${baseFontSize}px ${fontFamily}`;
     ctx.fillStyle = inkColorInput.value;
     ctx.textBaseline = "alphabetic";
 
     const maxTextWidth = canvas.width - PAPER_PADDING_LEFT - PAPER_PADDING_RIGHT;
-    processAndDrawParagraphs(maxTextWidth, lineSpacing, fontSize);
+    processAndDrawParagraphs(maxTextWidth, baseLineSpacing, baseFontSize);
     positionFloatingToolbar();
 }
 
 function syncTextState() {
-    let textContent = textInput.value !== undefined ? textInput.value : (textInput.innerText || '');
-    if (textContent.endsWith('\n\n')) textContent = textContent.slice(0, -1);
+    const parsedItems = parseEditorContent();
 
-    const lines = textContent.split('\n');
-    paragraphsState = lines.map((text, index) => {
-        if (paragraphsState[index]) return { ...paragraphsState[index], text };
-        return { text, offsetX: 0, offsetY: 0, boundingBox: null, color: inkColorInput.value, fontSize: null };
+    paragraphsState = parsedItems.map((item, index) => {
+        const existing = paragraphsState[index];
+        if (existing) {
+            return {
+                ...existing,
+                text: item.text || '',
+                type: item.type,
+                textSize: item.textSize || 'p',
+                segments: item.segments || [],
+                tableData: item.tableData || null,
+                num: item.num || null
+            };
+        }
+        return {
+            text: item.text || '',
+            type: item.type,
+            textSize: item.textSize || 'p',
+            segments: item.segments || [],
+            tableData: item.tableData || null,
+            num: item.num || null,
+            offsetX: 0,
+            offsetY: 0,
+            boundingBox: null,
+            color: inkColorInput.value
+        };
     });
 
     if (selectedParaIndex >= paragraphsState.length) {
@@ -276,11 +533,6 @@ inkColorInput.addEventListener('input', () => {
 
 generateBtn.addEventListener('click', generateCanvas);
 
-// We no longer trigger sync & render on realtime typing.
-// The user must click Generate.
-// textInput.addEventListener('input', ...);
-// textInput.addEventListener('keyup', ...);
-
 floatingColor.addEventListener('input', (e) => {
     if (selectedParaIndex !== -1 && paragraphsState[selectedParaIndex]) {
         paragraphsState[selectedParaIndex].color = e.target.value;
@@ -288,26 +540,11 @@ floatingColor.addEventListener('input', (e) => {
     }
 });
 
-function updateFloatingSize(newSize) {
-    if (selectedParaIndex !== -1 && paragraphsState[selectedParaIndex]) {
-        const size = Math.max(16, Math.min(64, parseInt(newSize) || 28));
-        paragraphsState[selectedParaIndex].fontSize = size;
-        floatingSize.value = size;
-        if (isCanvasGenerated) renderCanvas();
-    }
-}
-
-floatingSize.addEventListener('input', (e) => updateFloatingSize(e.target.value));
-floatingSizeDown.addEventListener('click', () => updateFloatingSize(parseInt(floatingSize.value) - 2));
-floatingSizeUp.addEventListener('click', () => updateFloatingSize(parseInt(floatingSize.value) + 2));
-
 floatingReset.addEventListener('click', () => {
     if (selectedParaIndex !== -1 && paragraphsState[selectedParaIndex]) {
         paragraphsState[selectedParaIndex].offsetX = 0;
         paragraphsState[selectedParaIndex].offsetY = 0;
-        paragraphsState[selectedParaIndex].fontSize = null; // also reset custom size
         if (isCanvasGenerated) {
-            floatingSize.value = parseInt(fontSizeInput.value) || 28;
             renderCanvas();
         }
     }
@@ -357,7 +594,6 @@ function updateSelectionUI() {
     if (selectedParaIndex !== -1 && paragraphsState[selectedParaIndex]) {
         floatingToolbar.classList.remove('hidden');
         floatingColor.value = paragraphsState[selectedParaIndex].color || inkColorInput.value;
-        floatingSize.value = paragraphsState[selectedParaIndex].fontSize || parseInt(fontSizeInput.value) || 28;
         positionFloatingToolbar();
     } else {
         floatingToolbar.classList.add('hidden');
