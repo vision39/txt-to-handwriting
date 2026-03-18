@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/vision39/txt-to-handwriting/compare/v1.1.0...v1.1.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* Contributor Profile loading ([d762227](https://github.com/vision39/txt-to-handwriting/commit/d762227b5023739dfa0e7fd6aa64b05129a0767d))
+* Contributor Profile loading ([1113e86](https://github.com/vision39/txt-to-handwriting/commit/1113e86bba7642bf9ed98342ff29d9a59411fb1f))
+
 ## [1.1.0](https://github.com/vision39/txt-to-handwriting/compare/v1.0.0...v1.1.0) (2026-03-18)
 
 
