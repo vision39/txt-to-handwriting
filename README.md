@@ -52,6 +52,6 @@ Simply open `index.html` in your favorite modern web browser to start using the 
 4. **Position Layout**: Click and drag paragraphs on the canvas on the right side to align them perfectly. Use the floating toolbar to change specific paragraph colors or reset positions.
 5. **Download**: Once satisfied, click the "Download Image" button to save your creation to your device.
 
-## 🤖 Automated Releases
+## Support ❤️
 
-This repository uses [Release Please](https://github.com/googleapis/release-please-action) to automate versioning, tag creation, and GitHub Releases. To trigger a new release, ensure your commit messages follow the [Conventional Commits](https://www.conventionalcommits.org/) specification (e.g., `feat: add new feature`, `fix: resolve issue`).
+[![Buy Me A Chai](https://buymeachai.ezee.li/assets/images/buymeachai-button.png)](https://buymeachai.ezee.li/vision39)
