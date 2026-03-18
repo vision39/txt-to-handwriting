@@ -22,6 +22,7 @@ import {
   parseEditorContent,
   positionFloatingToolbar,
   updateSelectionUI,
+  initPagination,
 } from './ui.js';
 
 // ─── DOM Element References ─────────────────────────────────────────
@@ -60,6 +61,12 @@ const el = {
   floatingColor: document.getElementById('floatingColor'),
   floatingReset: document.getElementById('floatingReset'),
 
+  // Pagination UI
+  paginationUI: document.getElementById('paginationUI'),
+  prevPageBtn: document.getElementById('prevPageBtn'),
+  nextPageBtn: document.getElementById('nextPageBtn'),
+  pageIndicator: document.getElementById('pageIndicator'),
+
   // Font upload modal
   addFontBtn: document.getElementById('addFontBtn'),
   fontModal: document.getElementById('fontModal'),
@@ -82,6 +89,8 @@ const state = {
   paragraphsState: [],
   selectedParaIndex: -1,
   isCanvasGenerated: false,
+  currentPage: 0,
+  totalPages: 1,
 };
 
 // ─── Core Render / Generate Cycle ───────────────────────────────────
@@ -105,12 +114,36 @@ function renderCanvas() {
 
   const maxTextWidth = el.canvas.width - PAPER_PADDING_LEFT - PAPER_PADDING_RIGHT;
 
-  processAndDrawParagraphs(
-    el.ctx, state.paragraphsState, fontFamily,
-    el.inkColorInput.value, maxTextWidth, state.selectedParaIndex
+  state.totalPages = processAndDrawParagraphs(
+    el.ctx, el.canvas, state.paragraphsState, fontFamily,
+    el.inkColorInput.value, maxTextWidth, state.selectedParaIndex, state.currentPage
   );
+  
+  // Ensure currentPage doesn't exceed totalPages if content shrank
+  if (state.currentPage >= state.totalPages && state.totalPages > 0) {
+    state.currentPage = state.totalPages - 1;
+    // We have to re-render because we just changed the page index we need to draw
+    return renderCanvas();
+  }
 
+  updatePaginationUI();
   positionFloatingToolbar(el, state);
+}
+
+/**
+ * Update the visibility and state of the pagination overlay controls.
+ */
+function updatePaginationUI() {
+  if (!state.isCanvasGenerated || state.totalPages <= 1) {
+    el.paginationUI.classList.add('hidden');
+    return;
+  }
+  
+  el.paginationUI.classList.remove('hidden');
+  el.pageIndicator.textContent = `Page ${state.currentPage + 1} of ${state.totalPages}`;
+  
+  el.prevPageBtn.disabled = state.currentPage === 0;
+  el.nextPageBtn.disabled = state.currentPage >= state.totalPages - 1;
 }
 
 /**
@@ -160,6 +193,7 @@ function syncTextState() {
  */
 function generateCanvas() {
   state.isCanvasGenerated = true;
+  state.currentPage = 0; // Reset to page 1 on fresh generation
 
   el.downloadBtn.disabled = false;
   el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -223,6 +257,7 @@ initEditorToolbar(el);
 initSidebar(el, () => syncInputPageStyles(el.textInput, el.fontSelect, el.inkColorInput));
 initFontModal(el);
 initDragAndDrop(el, state, renderCanvas);
+initPagination(el, state, renderCanvas);
 
 // ─── Boot ───────────────────────────────────────────────────────────
 

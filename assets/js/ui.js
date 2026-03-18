@@ -73,6 +73,36 @@ export function updateToolbarState(el) {
   el.headingSelect.value = VALID_FORMATS.includes(format) ? format : 'p';
 }
 
+// ─── Pagination UI ──────────────────────────────────────────────────
+
+/**
+ * Handle pagination Next/Prev button clicks.
+ *
+ * @param {object} el
+ * @param {HTMLElement} el.prevPageBtn
+ * @param {HTMLElement} el.nextPageBtn
+ * @param {object} state — shared application state
+ * @param {Function} renderCanvas — trigger full re-render
+ */
+export function initPagination(el, state, renderCanvas) {
+  el.prevPageBtn.addEventListener('click', () => {
+    if (state.currentPage > 0) {
+      state.currentPage--;
+      // Deselect para when switching pages
+      state.selectedParaIndex = -1;
+      updateSelectionUI(el, state, renderCanvas);
+    }
+  });
+
+  el.nextPageBtn.addEventListener('click', () => {
+    if (state.currentPage < state.totalPages - 1) {
+      state.currentPage++;
+      state.selectedParaIndex = -1;
+      updateSelectionUI(el, state, renderCanvas);
+    }
+  });
+}
+
 // ─── Sidebar: Paper & Font Selection ────────────────────────────────
 
 /**

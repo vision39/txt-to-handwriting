@@ -168,7 +168,22 @@
                 <!-- Right: Output Preview Page -->
                 <div class="flex flex-col items-center w-full lg:w-1/2">
                     <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Preview</span>
-                    <canvas id="outputCanvas" width="794" height="1123" class="shadow-lg rounded-sm w-full max-w-[500px]" style="aspect-ratio:794/1123;"></canvas>
+                    <div class="w-full max-w-[500px]">
+                        <canvas id="outputCanvas" width="794" height="1123" class="shadow-lg rounded-sm w-full mb-4.5" style="aspect-ratio:794/1123;"></canvas>
+                        
+                        <!-- Pagination UI -->
+                        <div class="w-full flex justify-center mt-3 mb-2">
+                            <div id="paginationUI" class="hidden bg-white border border-gray-200 shadow-sm rounded-full px-4 py-2 flex items-center justify-between gap-4 transition-all w-[240px]">
+                                <button id="prevPageBtn" class="text-gray-500 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-gray-500 p-1 flex items-center justify-center transition-colors" title="Previous Page">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                                </button>
+                                <span id="pageIndicator" class="text-sm font-bold text-gray-700 select-none">Page 1 of 1</span>
+                                <button id="nextPageBtn" class="text-gray-500 hover:text-blue-600 disabled:opacity-30 disabled:hover:text-gray-500 p-1 flex items-center justify-center transition-colors" title="Next Page">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>

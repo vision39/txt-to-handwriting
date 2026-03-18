@@ -10,6 +10,7 @@
 export const PAPER_PADDING_LEFT = 80;
 export const PAPER_PADDING_RIGHT = 30;
 export const PAPER_PADDING_TOP = 80;
+export const PAPER_PADDING_BOTTOM = 80;
 
 /** Font-size to canvas-pixel mapping for heading levels */
 const HEADING_SIZE_MAP = { h1: 48, h2: 36, h3: 28, p: 24 };
@@ -139,79 +140,113 @@ export function drawSelectionHighlight(ctx, box) {
 // ─── Paragraph Rendering ────────────────────────────────────────────
 
 /**
- * Render all paragraphs onto the canvas with word-wrap, bullet/number
- * prefixes, underline decoration, and optional drag offsets.
+ * Render paragraphs onto the canvas with word-wrap, grouping into pages.
+ * Returns the total number of pages required.
  *
  * @param {CanvasRenderingContext2D} ctx
+ * @param {HTMLCanvasElement} canvas
  * @param {Array}  paragraphsState  — mutable paragraph state array
  * @param {string} fontFamily       — CSS font-family string
  * @param {string} inkColor         — fallback ink colour
  * @param {number} maxWidth         — max text width in canvas pixels
  * @param {number} selectedIndex    — currently selected paragraph (-1 for none)
+ * @param {number} pageIndex        — 0-based index of the page to render
+ * @returns {number} totalPages
  */
 export function processAndDrawParagraphs(
-  ctx, paragraphsState, fontFamily, inkColor, maxWidth, selectedIndex
+  ctx, canvas, paragraphsState, fontFamily, inkColor, maxWidth, selectedIndex, pageIndex
 ) {
   const BASE_FONT_SIZE = HEADING_SIZE_MAP.p;
-  let currentBaseY = PAPER_PADDING_TOP - (BASE_FONT_SIZE * 0.2);
   const startX = PAPER_PADDING_LEFT + 10;
+  const MAX_Y = canvas.height - PAPER_PADDING_BOTTOM;
+
+  let currentVirtualY = PAPER_PADDING_TOP - (BASE_FONT_SIZE * 0.2);
+  let currentPage = 0;
+  
+  // Keep track of how many pages we need
+  let totalPages = 1;
 
   paragraphsState.forEach((para, index) => {
     const paraFontSize = HEADING_SIZE_MAP[para.textSize] || HEADING_SIZE_MAP.p;
     const paraLineSpacing = paraFontSize * 1.4;
 
-    // Empty text lines just advance the Y cursor
+    // Reset bounding box. If this paragraph isn't on the CURRENT page, it'll remain null.
+    para.boundingBox = null;
+
     if ((!para.text || para.text.length === 0) && para.type === 'text') {
-      currentBaseY += paraLineSpacing;
-      para.boundingBox = null;
+      currentVirtualY += paraLineSpacing;
+      if (currentVirtualY > MAX_Y) {
+        currentVirtualY = PAPER_PADDING_TOP;
+        currentPage++;
+        totalPages = Math.max(totalPages, currentPage + 1);
+      }
       return;
     }
 
-    // Build display text with list prefix
     const prefix = buildListPrefix(para);
     const fullText = prefix + (para.text || '');
     const segments = para.segments || [{ text: para.text, underline: false }];
 
     ctx.font = `${paraFontSize}px ${fontFamily}`;
-
-    // Word-wrap into lines
     const lines = wordWrap(ctx, fullText, maxWidth);
-
-    const paraStartX = startX + para.offsetX;
-    const paraStartY = currentBaseY + para.offsetY;
-    const height = lines.length * paraLineSpacing;
-
-    // Draw each line
     ctx.fillStyle = para.color || inkColor;
 
     const hasUnderline = segments.some((s) => s.underline);
 
-    lines.forEach((line, lineIndex) => {
-      const lineY = paraStartY + lineIndex * paraLineSpacing;
-      ctx.fillText(line, paraStartX, lineY);
+    // Track the physical bounding box for hit testing, but ONLY for lines drawn on the active page
+    let drawnLinesOnActivePage = 0;
+    let firstDrawnYOnActivePage = -1;
+    let lastDrawnYOnActivePage = -1;
 
-      if (hasUnderline) {
-        drawUnderlineSpans(
-          ctx, line, lines, lineIndex, lineY,
-          paraStartX, paraFontSize, prefix, para, segments, inkColor
-        );
+    lines.forEach((line, lineIndex) => {
+      // Before placing the line, check if we need to pagination-break
+      if (currentVirtualY + paraLineSpacing > MAX_Y) {
+        currentPage++;
+        totalPages = Math.max(totalPages, currentPage + 1);
+        currentVirtualY = PAPER_PADDING_TOP; // reset Y to top of new page
       }
+
+      const paraStartX = startX + para.offsetX;
+      const lineY = currentVirtualY + para.offsetY;
+
+      // Only draw if this line belongs to the page we are currently rendering
+      if (currentPage === pageIndex) {
+        ctx.fillText(line, paraStartX, lineY);
+        
+        if (drawnLinesOnActivePage === 0) firstDrawnYOnActivePage = lineY;
+        lastDrawnYOnActivePage = lineY;
+        drawnLinesOnActivePage++;
+
+        if (hasUnderline) {
+          drawUnderlineSpans(
+            ctx, line, lines, lineIndex, lineY,
+            paraStartX, paraFontSize, prefix, para, segments, inkColor
+          );
+        }
+      }
+
+      currentVirtualY += paraLineSpacing;
     });
 
-    // Store bounding box for hit-testing and selection highlight
-    para.boundingBox = {
-      x: startX - 10,
-      y: paraStartY - paraFontSize,
-      w: maxWidth + 20,
-      h: height + paraFontSize * 0.2,
-    };
+    // Sub-margin after a paragraph
+    currentVirtualY += (paraFontSize * 0.2);
 
-    if (index === selectedIndex) {
-      drawSelectionHighlight(ctx, para.boundingBox);
+    // If any part of this paragraph was drawn on the currently active page, set its hitbox
+    if (drawnLinesOnActivePage > 0 && currentPage >= pageIndex) {
+      para.boundingBox = {
+        x: startX - 10,
+        y: firstDrawnYOnActivePage - paraFontSize,
+        w: maxWidth + 20,
+        h: (lastDrawnYOnActivePage - firstDrawnYOnActivePage) + paraLineSpacing,
+      };
+
+      if (index === selectedIndex) {
+        drawSelectionHighlight(ctx, para.boundingBox);
+      }
     }
-
-    currentBaseY += height;
   });
+
+  return totalPages;
 }
 
 // ─── Internal Helpers ───────────────────────────────────────────────
