@@ -242,7 +242,7 @@ body {
 /* 2. Header and Sidebars */
 .dark-mode header,
 .dark-mode aside,
-.dark-mode .bg-white:not(#textInput):not(#outputCanvas){
+.dark-mode .bg-white:not(#textInput, #outputCanvas){
     background-color: #1f2937 !important;
     border-color: #374151 !important;
 }
@@ -251,7 +251,6 @@ body {
 .dark-mode #outputCanvas {
     background-color: #ffffff !important;
     color: #111827 !important;
-
     border-color: #d1d5db !important;
 }
 
