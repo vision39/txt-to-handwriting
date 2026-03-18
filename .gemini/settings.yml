@@ -1,7 +1,0 @@
-code_review:
-  pull_request_opened:
-    summary: false
-    code_review: false
-  pull_request_synchronized:
-    summary: false
-    code_review: false
