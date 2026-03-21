@@ -198,6 +198,10 @@ export function calculateDocumentLayout(ctx, canvas, paragraphsState, fontFamily
 
       const lineY = currentVirtualY;
 
+      const wordsInLine = line.split(' ');
+      const wordJittersX = wordsInLine.map(() => (Math.random() * 3) - 1.5);
+      const wordJittersY = wordsInLine.map(() => (Math.random() * 2) - 1.0);
+
       para.layout.lines.push({
         text: line,
         lineIndex,
@@ -207,7 +211,9 @@ export function calculateDocumentLayout(ctx, canvas, paragraphsState, fontFamily
         segments,
         pageIndex: currentPage,
         baseY: lineY,
-        fontSize: paraFontSize
+        fontSize: paraFontSize,
+        wordJittersX,
+        wordJittersY
       });
 
       if (firstYOnPage[currentPage] === undefined) firstYOnPage[currentPage] = lineY;
@@ -282,7 +288,23 @@ export function drawCalculatedPage(ctx, paragraphsState, fontFamily, inkColor, s
     // Draw the precalculated lines
     linesToDraw.forEach(lineCtx => {
       const lineY = lineCtx.baseY + para.offsetY;
-      ctx.fillText(lineCtx.text, paraStartX, lineY);
+      
+      let currentX = paraStartX;
+      const words = lineCtx.text.split(' ');
+      
+      words.forEach((word, idx) => {
+        if (word === '' && idx === words.length - 1) return;
+        
+        const jitterX = lineCtx.wordJittersX ? lineCtx.wordJittersX[idx] : 0;
+        const jitterY = lineCtx.wordJittersY ? lineCtx.wordJittersY[idx] : 0;
+        
+        ctx.fillText(word, currentX, lineY + jitterY);
+        
+        const wordWidth = ctx.measureText(word).width;
+        const spaceWidth = ctx.measureText(' ').width;
+        
+        currentX += wordWidth + spaceWidth + jitterX;
+      });
 
       if (lineCtx.isUnderlined) {
         drawUnderlineSpans(
@@ -319,15 +341,42 @@ function wordWrap(ctx, text, maxWidth) {
   let currentLine = '';
 
   for (let i = 0; i < words.length; i++) {
-    const testLine = currentLine + words[i] + ' ';
-    if (ctx.measureText(testLine).width > maxWidth && i > 0) {
-      lines.push(currentLine);
-      currentLine = words[i] + ' ';
+    let word = words[i];
+
+    if (ctx.measureText(currentLine + word + ' ').width > maxWidth) {
+      if (currentLine !== '') {
+        lines.push(currentLine);
+        currentLine = '';
+      }
+
+      if (ctx.measureText(word + ' ').width > maxWidth) {
+        let brokenWord = '';
+        for (let j = 0; j < word.length; j++) {
+          const char = word[j];
+          if (ctx.measureText(brokenWord + char).width > maxWidth) {
+            if (brokenWord !== '') {
+              lines.push(brokenWord);
+              brokenWord = char;
+            } else {
+              brokenWord = char;
+            }
+          } else {
+            brokenWord += char;
+          }
+        }
+        currentLine = brokenWord + ' ';
+      } else {
+        currentLine = word + ' ';
+      }
     } else {
-      currentLine = testLine;
+      currentLine += word + ' ';
     }
   }
-  lines.push(currentLine);
+
+  if (currentLine !== '') {
+    lines.push(currentLine);
+  }
+
   return lines;
 }
 

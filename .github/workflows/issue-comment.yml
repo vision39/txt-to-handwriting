@@ -1,0 +1,34 @@
+name: Auto Comment on New Issue
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              '👋 Thanks for opening this issue!',
+              '',
+              'Please follow these guidelines:',
+              '- Keep issue description clear and detailed',
+              '- Mention steps to reproduce (if bug)',
+              '- Be respectful and constructive',
+              '- Check if issue already exists',
+              '',
+              'Happy contributing 🚀'
+            ].join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

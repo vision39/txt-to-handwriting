@@ -47,9 +47,14 @@ const el = {
 
   // Header buttons
   generateBtn: document.getElementById('generateBtn'),
-  downloadImageBtn: document.getElementById('downloadImageBtn'),
-  downloadPDFBtn: document.getElementById('downloadPDFBtn'),
   resetLayoutBtn: document.getElementById('resetLayoutBtn'),
+  downloadDropdownContainer: document.getElementById('downloadDropdownContainer'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  downloadBtnText: document.getElementById('downloadBtnText'),
+  downloadDropdownIcon: document.getElementById('downloadDropdownIcon'),
+  downloadMenu: document.getElementById('downloadMenu'),
+  downloadCurrentBtn: document.getElementById('downloadCurrentBtn'),
+  downloadAllBtn: document.getElementById('downloadAllBtn'),
 
   // Editor toolbar
   btnUnderline: document.getElementById('btnUnderline'),
@@ -170,6 +175,9 @@ function renderCanvas() {
 function updatePaginationUI() {
   if (!state.isCanvasGenerated || state.totalPages <= 1) {
     el.paginationUI.classList.add('hidden');
+    // Hide dropdown elements for single page
+    if (el.downloadDropdownIcon) el.downloadDropdownIcon.classList.add('hidden');
+    if (el.downloadMenu) el.downloadMenu.classList.add('hidden');
     return;
   }
   
@@ -178,6 +186,9 @@ function updatePaginationUI() {
   
   el.prevPageBtn.disabled = state.currentPage === 0;
   el.nextPageBtn.disabled = state.currentPage >= state.totalPages - 1;
+
+  // Show dropdown arrow if multiple pages
+  if (el.downloadDropdownIcon) el.downloadDropdownIcon.classList.remove('hidden');
 }
 
 /**
@@ -247,17 +258,75 @@ function generateCanvas() {
 // Generate button
 el.generateBtn.addEventListener('click', generateCanvas);
 
-// Download Image button
-el.downloadImageBtn.addEventListener('click', () => {
-  if (!state.isCanvasGenerated) return;
-  downloadCanvasAsImage(el.canvas);
+// Close dropdown if clicked outside
+document.addEventListener('click', (e) => {
+  if (el.downloadDropdownContainer && !el.downloadDropdownContainer.contains(e.target)) {
+    if (el.downloadMenu) el.downloadMenu.classList.add('hidden');
+  }
 });
 
-// Download PDF button
-el.downloadPDFBtn.addEventListener('click', () => {
+// Download button (main)
+el.downloadBtn.addEventListener('click', () => {
   if (!state.isCanvasGenerated) return;
-  downloadCanvasAsPDF(el.canvas);
+  
+  if (state.totalPages > 1) {
+    // Toggle dropdown
+    el.downloadMenu.classList.toggle('hidden');
+  } else {
+    // Single page download
+    downloadCanvasAsImage(el.canvas);
+  }
 });
+
+// Dropdown item: Download Current
+if (el.downloadCurrentBtn) {
+  el.downloadCurrentBtn.addEventListener('click', () => {
+    el.downloadMenu.classList.add('hidden');
+    if (!state.isCanvasGenerated) return;
+    downloadCanvasAsImage(el.canvas, state.currentPage + 1);
+  });
+}
+
+// Dropdown item: Download All
+if (el.downloadAllBtn) {
+  el.downloadAllBtn.addEventListener('click', async () => {
+    el.downloadMenu.classList.add('hidden');
+    if (!state.isCanvasGenerated) return;
+
+    const originalPage = state.currentPage;
+    const origDownloadText = el.downloadBtnText.textContent;
+
+    // Disable button and other interactive elements to prevent state corruption
+    el.downloadBtn.disabled = true;
+    el.generateBtn.disabled = true;
+    el.textInput.contentEditable = 'false';
+    el.downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    el.downloadBtnText.textContent = "Downloading...";
+
+    try {
+      const timestamp = Date.now(); // Use a single timestamp for the batch
+      for (let i = 0; i < state.totalPages; i++) {
+        state.currentPage = i;
+        renderCanvas();
+
+        // Wait for canvas to repaint and to space out downloads to avoid browser blocking
+        await new Promise(r => setTimeout(r, 250));
+
+        // Note: assumes downloadCanvasAsImage takes (canvas, pageNum, timestamp)
+        downloadCanvasAsImage(el.canvas, i + 1, timestamp);
+      }
+    } finally {
+      // Restore UI state safely
+      state.currentPage = originalPage;
+      renderCanvas();
+      el.downloadBtnText.textContent = origDownloadText;
+      el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      el.downloadBtn.disabled = false;
+      el.generateBtn.disabled = false;
+      el.textInput.contentEditable = 'true';
+    }
+  });
+}
 
 // Ink colour picker (global)
 el.inkColorInput.addEventListener('input', () => {
@@ -350,19 +419,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto';
+    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-4xl mx-auto';
     grid.innerHTML = contributors
       .map(
         (c) => `
       <a href="${c.html_url}" target="_blank" rel="noopener noreferrer"
-         class="flex items-center gap-4 bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-md transition-all group"
-         title="${c.login} — ${c.contributions} contributions">
+         class="flex flex-col items-center justify-center gap-3 bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-md transition-all group aspect-square"
+         title="@${c.login}">
         <img src="${c.avatar_url}${c.avatar_url.includes('?') ? '&' : '?'}s=96" alt="${c.login}"
              class="w-16 h-16 rounded-full ring-2 ring-gray-100 group-hover:ring-blue-100 transition-all">
-        <div class="flex flex-col">
-          <span class="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">@${c.login}</span>
-          <span class="text-xs text-gray-500">${c.contributions} contributions</span>
-        </div>
+        <span class="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-center w-full truncate">@${c.login}</span>
       </a>`
       )
       .join('');

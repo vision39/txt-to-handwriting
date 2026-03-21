@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.2.0](https://github.com/vision39/txt-to-handwriting/compare/v1.1.1...v1.2.0) (2026-03-21)
+
+
+### Features
+
+* Add a new "Support" section ([1c1f365](https://github.com/vision39/txt-to-handwriting/commit/1c1f36509455089e37876da67df7aa2732980d75))
+* add responsive dark mode toggle with localStorage ([#13](https://github.com/vision39/txt-to-handwriting/issues/13)) ([b970628](https://github.com/vision39/txt-to-handwriting/commit/b970628c6c14148e80a6232b900699862f8af250))
+* added edit preview page option ([c5b5751](https://github.com/vision39/txt-to-handwriting/commit/c5b5751eeb4e1b4f34d22fab84d3efe881dd3339))
+
+
+### Bug Fixes
+
+* Add multi-page download feature ([#26](https://github.com/vision39/txt-to-handwriting/issues/26)) ([8dd8177](https://github.com/vision39/txt-to-handwriting/commit/8dd81776c4ba7f6a5813edbde2718654208e247e))
+* added jitter spacing ([0987faf](https://github.com/vision39/txt-to-handwriting/commit/0987faf8f0d464aeef111ca660c3cef4c64c6413))
+* Introduce canvas rendering for text, paper backgrounds, and selection, along with Gemini configuration. ([7fbd769](https://github.com/vision39/txt-to-handwriting/commit/7fbd76972cea218a0e147b12586fc6543e49a38d))
+* line breaking ([7d3263d](https://github.com/vision39/txt-to-handwriting/commit/7d3263d44ac6be619c8a22bc9bfc981c9efbb86c))
+* multipage on final preview ([a576efd](https://github.com/vision39/txt-to-handwriting/commit/a576efdeccdac1b3c2149cc3a047516c580a8f01))
+
 ## [1.1.1](https://github.com/vision39/txt-to-handwriting/compare/v1.1.0...v1.1.1) (2026-03-18)
 
 

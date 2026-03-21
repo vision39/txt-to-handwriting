@@ -403,3 +403,23 @@ body.dark-mode button.bg-white:hover,
 body.dark-mode a.bg-white:hover {
     background-color: var(--dm-border);
 }
+
+/* 9. Download Dropdown UI */
+body.dark-mode #downloadMenu {
+    background-color: var(--dm-surface);
+    border: 1px solid var(--dm-border);
+}
+
+body.dark-mode #downloadMenu button {
+    color: var(--dm-text);
+    background-color: transparent;
+}
+
+body.dark-mode #downloadMenu button:hover {
+    background-color: var(--dm-surface-2);
+    color: var(--dm-text-light);
+}
+
+body.dark-mode #downloadAllBtn {
+    border-top-color: var(--dm-border);
+}
