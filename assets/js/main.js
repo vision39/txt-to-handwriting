@@ -47,8 +47,14 @@ const el = {
 
   // Header buttons
   generateBtn: document.getElementById('generateBtn'),
-  downloadBtn: document.getElementById('downloadBtn'),
   resetLayoutBtn: document.getElementById('resetLayoutBtn'),
+  downloadDropdownContainer: document.getElementById('downloadDropdownContainer'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  downloadBtnText: document.getElementById('downloadBtnText'),
+  downloadDropdownIcon: document.getElementById('downloadDropdownIcon'),
+  downloadMenu: document.getElementById('downloadMenu'),
+  downloadCurrentBtn: document.getElementById('downloadCurrentBtn'),
+  downloadAllBtn: document.getElementById('downloadAllBtn'),
 
   // Editor toolbar
   btnUnderline: document.getElementById('btnUnderline'),
@@ -169,6 +175,9 @@ function renderCanvas() {
 function updatePaginationUI() {
   if (!state.isCanvasGenerated || state.totalPages <= 1) {
     el.paginationUI.classList.add('hidden');
+    // Hide dropdown elements for single page
+    if (el.downloadDropdownIcon) el.downloadDropdownIcon.classList.add('hidden');
+    if (el.downloadMenu) el.downloadMenu.classList.add('hidden');
     return;
   }
   
@@ -177,6 +186,9 @@ function updatePaginationUI() {
   
   el.prevPageBtn.disabled = state.currentPage === 0;
   el.nextPageBtn.disabled = state.currentPage >= state.totalPages - 1;
+
+  // Show dropdown arrow if multiple pages
+  if (el.downloadDropdownIcon) el.downloadDropdownIcon.classList.remove('hidden');
 }
 
 /**
@@ -244,11 +256,68 @@ function generateCanvas() {
 // Generate button
 el.generateBtn.addEventListener('click', generateCanvas);
 
-// Download button
+// Close dropdown if clicked outside
+document.addEventListener('click', (e) => {
+  if (el.downloadDropdownContainer && !el.downloadDropdownContainer.contains(e.target)) {
+    if (el.downloadMenu) el.downloadMenu.classList.add('hidden');
+  }
+});
+
+// Download button (main)
 el.downloadBtn.addEventListener('click', () => {
   if (!state.isCanvasGenerated) return;
-  downloadCanvasAsImage(el.canvas);
+  
+  if (state.totalPages > 1) {
+    // Toggle dropdown
+    el.downloadMenu.classList.toggle('hidden');
+  } else {
+    // Single page download
+    downloadCanvasAsImage(el.canvas);
+  }
 });
+
+// Dropdown item: Download Current
+if (el.downloadCurrentBtn) {
+  el.downloadCurrentBtn.addEventListener('click', () => {
+    el.downloadMenu.classList.add('hidden');
+    if (!state.isCanvasGenerated) return;
+    downloadCanvasAsImage(el.canvas, state.currentPage + 1);
+  });
+}
+
+// Dropdown item: Download All
+if (el.downloadAllBtn) {
+  el.downloadAllBtn.addEventListener('click', async () => {
+    el.downloadMenu.classList.add('hidden');
+    if (!state.isCanvasGenerated) return;
+    
+    // Save current state
+    const originalPage = state.currentPage;
+    const origDownloadText = el.downloadBtnText.textContent;
+    
+    // Temporary UI update
+    el.downloadBtnText.textContent = "Downloading...";
+    el.downloadBtn.classList.add('opacity-80');
+
+    for (let i = 0; i < state.totalPages; i++) {
+      state.currentPage = i;
+      renderCanvas();
+      
+      // Allow the DOM/Canvas to update sequentially
+      await new Promise(r => setTimeout(r, 100)); 
+      
+      // Optionally wait slightly more to prevent browser from blocking
+      await new Promise(r => setTimeout(r, 150));
+      downloadCanvasAsImage(el.canvas, i + 1);
+    }
+
+    // Restore to original page
+    state.currentPage = originalPage;
+    renderCanvas();
+    el.downloadBtnText.textContent = origDownloadText;
+    el.downloadBtn.classList.remove('opacity-80');
+  });
+}
 
 // Ink colour picker (global)
 el.inkColorInput.addEventListener('input', () => {
