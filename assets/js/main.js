@@ -294,8 +294,10 @@ if (el.downloadAllBtn) {
     const originalPage = state.currentPage;
     const origDownloadText = el.downloadBtnText.textContent;
 
-    // Disable button and show downloading state
+    // Disable button and other interactive elements to prevent state corruption
     el.downloadBtn.disabled = true;
+    el.generateBtn.disabled = true;
+    el.textInput.contentEditable = 'false';
     el.downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
     el.downloadBtnText.textContent = "Downloading...";
 
@@ -318,6 +320,8 @@ if (el.downloadAllBtn) {
       el.downloadBtnText.textContent = origDownloadText;
       el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       el.downloadBtn.disabled = false;
+      el.generateBtn.disabled = false;
+      el.textInput.contentEditable = 'true';
     }
   });
 }
