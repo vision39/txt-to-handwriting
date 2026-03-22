@@ -56,6 +56,7 @@ const el = {
   downloadCurrentBtn: document.getElementById('downloadCurrentBtn'),
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadPDFBtn: document.getElementById('downloadPDFBtn'),
+  downloadPDFBtnText: document.getElementById('downloadPDFBtnText'),
 
   // Editor toolbar
   btnUnderline: document.getElementById('btnUnderline'),
@@ -344,7 +345,7 @@ if (el.downloadPDFBtn) {
     });
 
     const originalPage = state.currentPage;
-    const origDownloadText = el.downloadPDFBtn.textContent;
+    const origDownloadText = el.downloadPDFBtnText.textContent;
 
     // Disable button and other interactive elements to prevent state corruption
     el.downloadPDFBtn.disabled = true;
@@ -353,7 +354,7 @@ if (el.downloadPDFBtn) {
     el.textInput.contentEditable = 'false';
     el.downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
     el.downloadPDFBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    el.downloadPDFBtn.textContent = "Downloading...";
+    el.downloadPDFBtnText.textContent = "Downloading...";
 
     try {
       const timestamp = Date.now(); // Use a single timestamp for the batch
@@ -372,7 +373,7 @@ if (el.downloadPDFBtn) {
       pdfDoc.save(`handwritten-note-${Date.now()}.pdf`);
       state.currentPage = originalPage;
       renderCanvas();
-      el.downloadPDFBtn.textContent = origDownloadText;
+      el.downloadPDFBtnText.textContent = origDownloadText;
       el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       el.downloadPDFBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       el.downloadBtn.disabled = false;
