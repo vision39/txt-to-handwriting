@@ -500,13 +500,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
+// Mobile Hamburger Menu Logic
+// ==========================================
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+const leftSidebar = document.getElementById('leftSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+function toggleMobileMenu(show) {
+    if (show) {
+        leftSidebar.classList.remove('-translate-x-full');
+        sidebarOverlay.classList.remove('hidden', 'opacity-0');
+        setTimeout(() => sidebarOverlay.classList.add('opacity-100'), 10);
+    } else {
+        leftSidebar.classList.add('-translate-x-full');
+        sidebarOverlay.classList.remove('opacity-100');
+        sidebarOverlay.classList.add('opacity-0');
+        setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+    }
+}
+
+if (hamburgerBtn) hamburgerBtn.addEventListener('click', () => toggleMobileMenu(true));
+if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', () => toggleMobileMenu(false));
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', () => toggleMobileMenu(false));
+
+
+// ==========================================
 // Dark Mode Toggle Logic
 // ==========================================
 
-const darkModeToggle = document.getElementById('dark-mode-toggle');
-const toggleText = darkModeToggle.querySelector('span'); 
-const moonIcon = document.getElementById('moon-icon');
-const sunIcon = document.getElementById('sun-icon');
+const darkModeToggles = document.querySelectorAll('.dark-mode-toggle');
 const siteLogo = document.getElementById('siteLogo');
 
 // Helper function to apply colors
@@ -515,21 +538,30 @@ function applyTheme(theme) {
     
     if (isDark) {
         document.body.classList.add('dark-mode');
-        toggleText.textContent = 'Light Mode';
-        moonIcon.classList.replace('block', 'hidden');
-        sunIcon.classList.replace('hidden', 'block');
         if (siteLogo) siteLogo.src = 'assets/picture/icon-nobg.png';
     } else {
         document.body.classList.remove('dark-mode');
-        toggleText.textContent = 'Dark Mode';
-        sunIcon.classList.replace('block', 'hidden');
-        moonIcon.classList.replace('hidden', 'block');
         if (siteLogo) siteLogo.src = 'assets/picture/icon.png';
     }
-    
-    // Add Accessibility (ARIA) states for screen readers
-    darkModeToggle.setAttribute('aria-pressed', String(isDark));
-    darkModeToggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+
+    darkModeToggles.forEach(btn => {
+        const toggleText = btn.querySelector('.theme-text');
+        const moonIcon = btn.querySelector('.moon-icon');
+        const sunIcon = btn.querySelector('.sun-icon');
+        
+        if (isDark) {
+            if (toggleText) toggleText.textContent = 'Light Mode';
+            if (moonIcon) moonIcon.classList.replace('block', 'hidden');
+            if (sunIcon) sunIcon.classList.replace('hidden', 'block');
+        } else {
+            if (toggleText) toggleText.textContent = 'Dark Mode';
+            if (sunIcon) sunIcon.classList.replace('block', 'hidden');
+            if (moonIcon) moonIcon.classList.replace('hidden', 'block');
+        }
+        
+        btn.setAttribute('aria-pressed', String(isDark));
+        btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    });
 }
 
 // 1. Check if the user already chose dark mode in a previous visit, else adapt to system preference
@@ -538,20 +570,16 @@ const currentTheme = localStorage.getItem('theme') || (systemPrefersDark ? 'dark
 applyTheme(currentTheme);
 
 // 2. Listen for clicks on the toggle button
-darkModeToggle.addEventListener('click', () => {
-    // Check what the NEW theme should be
-    const newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
-    
-    // Apply it
-    applyTheme(newTheme);
-    
-    // Save it to memory
-    localStorage.setItem('theme', newTheme);
+darkModeToggles.forEach(toggleBtn => {
+    toggleBtn.addEventListener('click', () => {
+        const newTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+        applyTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
 
-    // Re-draw the canvas so the UI updates instantly
-    if (state.isCanvasGenerated) {
-        renderCanvas();
-    } else {
-        drawBlankCanvas(el.ctx, el.canvas);
-    }
+        if (state.isCanvasGenerated) {
+            renderCanvas();
+        } else {
+            drawBlankCanvas(el.ctx, el.canvas);
+        }
+    });
 });
