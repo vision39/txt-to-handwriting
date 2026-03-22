@@ -63,3 +63,18 @@ export function downloadCanvasAsImage(canvas, pageNum = null, timestamp = Date.n
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
+
+export function addCanvasPageToPDF(pdfDoc, canvas, pageNum) {
+  const imgData = canvas.toDataURL("image/png");
+
+  const pdfWidth = pdfDoc.internal.pageSize.getWidth();
+  const pdfHeight = pdfDoc.internal.pageSize.getHeight();
+
+  // Add new page for all pages except the first
+  if (pageNum > 1) {
+    pdfDoc.addPage([pdfWidth, pdfHeight]);
+  }
+
+  // Draw image to PDF page
+  pdfDoc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+}

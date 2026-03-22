@@ -5,7 +5,7 @@
  * all UI modules, and boots the application.
  */
 
-import { downloadCanvasAsImage } from './utils.js';
+import { addCanvasPageToPDF, downloadCanvasAsImage } from './utils.js';
 import {
   PAPER_PADDING_LEFT,
   PAPER_PADDING_RIGHT,
@@ -55,6 +55,8 @@ const el = {
   downloadMenu: document.getElementById('downloadMenu'),
   downloadCurrentBtn: document.getElementById('downloadCurrentBtn'),
   downloadAllBtn: document.getElementById('downloadAllBtn'),
+  downloadPDFBtn: document.getElementById('downloadPDFBtn'),
+  downloadPDFBtnText: document.getElementById('downloadPDFBtnText'),
 
   // Editor toolbar
   btnUnderline: document.getElementById('btnUnderline'),
@@ -105,7 +107,7 @@ const bg1Image = new Image();
 bg1Image.src = 'assets/picture/Background 1.jpeg';
 
 // ─── Shared Application State ───────────────────────────────────────
-
+const { jsPDF } = window.jspdf;
 const state = {
   paragraphsState: [],
   selectedParaIndex: -1,
@@ -244,7 +246,9 @@ function generateCanvas() {
   state.currentPage = 0; // Reset to page 1 on fresh generation
 
   el.downloadBtn.disabled = false;
+  el.downloadPDFBtn.disabled = false;
   el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  el.downloadPDFBtn.classList.remove('opacity-50', 'cursor-not-allowed');
   el.resetLayoutBtn.classList.remove('hidden');
 
   syncTextState();
@@ -325,6 +329,59 @@ if (el.downloadAllBtn) {
     }
   });
 }
+
+// Download PDF
+if (el.downloadPDFBtn) {
+  el.downloadPDFBtn.addEventListener('click', async () => {
+    el.downloadMenu.classList.add('hidden');
+    if (!state.isCanvasGenerated) return;
+
+    
+    const pdfDoc = new jsPDF({
+      unit: 'pt',
+      format: [state.pageArea.w + PAPER_PADDING_LEFT + PAPER_PADDING_RIGHT, 
+              state.pageArea.h + PAPER_PADDING_TOP + PAPER_PADDING_BOTTOM
+      ],
+    });
+
+    const originalPage = state.currentPage;
+    const origDownloadText = el.downloadPDFBtnText.textContent;
+
+    // Disable button and other interactive elements to prevent state corruption
+    el.downloadPDFBtn.disabled = true;
+    el.downloadBtn.disabled = true;
+    el.generateBtn.disabled = true;
+    el.textInput.contentEditable = 'false';
+    el.downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    el.downloadPDFBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    el.downloadPDFBtnText.textContent = "Downloading...";
+
+    try {
+      for (let i = 0; i < state.totalPages; i++) {
+        state.currentPage = i;
+        renderCanvas();
+
+        // Wait for canvas to repaint and to space out downloads to avoid browser blocking
+        await new Promise(r => setTimeout(r, 250));
+
+        addCanvasPageToPDF(pdfDoc, el.canvas, i + 1);
+      }
+    } finally {
+      // Restore UI state safely
+      pdfDoc.save(`handwritten-note-${Date.now()}.pdf`);
+      state.currentPage = originalPage;
+      renderCanvas();
+      el.downloadPDFBtnText.textContent = origDownloadText;
+      el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      el.downloadPDFBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      el.downloadBtn.disabled = false;
+      el.downloadPDFBtn.disabled = false;
+      el.generateBtn.disabled = false;
+      el.textInput.contentEditable = 'true';
+    }
+  });
+}
+
 
 // Ink colour picker (global)
 el.inkColorInput.addEventListener('input', () => {
