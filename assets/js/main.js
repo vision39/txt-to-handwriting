@@ -329,7 +329,7 @@ if (el.downloadAllBtn) {
   });
 }
 
-// Downlaod PDF
+// Download PDF
 if (el.downloadPDFBtn) {
   el.downloadPDFBtn.addEventListener('click', async () => {
     el.downloadMenu.classList.add('hidden');
