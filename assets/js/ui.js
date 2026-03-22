@@ -604,11 +604,22 @@ export function initEditAreaModal(el, state, renderCanvas, updateLayout, drawPap
   el.editAreaOverlay.addEventListener('click', closeEditAreaModal);
 
   // Drag / Resize
-  selectionBox.addEventListener('mousedown', (e) => {
-    e.preventDefault();
+  function handleDragStart(e) {
+    if (e.type === 'touchstart') {
+      // Allow touching outside selection box to interact naturally, only prevent default on the box
+      if (typeof e.cancelable !== 'boolean' || e.cancelable) e.preventDefault();
+    } else {
+      e.preventDefault();
+    }
+    
     isDragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
+    
+    // Support Touch Events
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    dragStartX = clientX;
+    dragStartY = clientY;
 
     const rect = container.getBoundingClientRect();
     startLeft = parseFloat(selectionBox.style.left) || 10;
@@ -622,15 +633,25 @@ export function initEditAreaModal(el, state, renderCanvas, updateLayout, drawPap
     } else {
       dragType = 'move';
     }
-  });
+  }
 
-  window.addEventListener('mousemove', (e) => {
+  selectionBox.addEventListener('mousedown', handleDragStart);
+  selectionBox.addEventListener('touchstart', handleDragStart, { passive: false });
+
+  function handleDragMove(e) {
     if (!isDragging) return;
+    
+    if (e.type === 'touchmove') {
+      if (typeof e.cancelable !== 'boolean' || e.cancelable) e.preventDefault();
+    }
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
     const rect = container.getBoundingClientRect();
-    // Convert mouse movement to percentages
-    const dxPercent = ((e.clientX - dragStartX) / rect.width) * 100;
-    const dyPercent = ((e.clientY - dragStartY) / rect.height) * 100;
+    // Convert movement to percentages
+    const dxPercent = ((clientX - dragStartX) / rect.width) * 100;
+    const dyPercent = ((clientY - dragStartY) / rect.height) * 100;
 
     let newL = startLeft, newT = startTop, newW = startW, newH = startH;
 
@@ -657,12 +678,17 @@ export function initEditAreaModal(el, state, renderCanvas, updateLayout, drawPap
     selectionBox.style.top = `${newT}%`;
     selectionBox.style.width = `${newW}%`;
     selectionBox.style.height = `${newH}%`;
-  });
+  }
 
-  window.addEventListener('mouseup', () => {
+  function handleDragEnd() {
     isDragging = false;
     dragType = null;
-  });
+  }
+
+  window.addEventListener('mousemove', handleDragMove);
+  window.addEventListener('mouseup', handleDragEnd);
+  window.addEventListener('touchmove', handleDragMove, { passive: false });
+  window.addEventListener('touchend', handleDragEnd);
 
   // Apply Changes
   el.saveEditArea.addEventListener('click', () => {
