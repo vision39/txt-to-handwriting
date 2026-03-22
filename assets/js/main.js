@@ -516,7 +516,7 @@ function toggleMobileMenu(show) {
         leftSidebar.classList.add('-translate-x-full');
         sidebarOverlay.classList.remove('opacity-100');
         sidebarOverlay.classList.add('opacity-0');
-        setTimeout(() => sidebarOverlay.classList.add('hidden'), 300);
+        leftSidebar.addEventListener('transitionend', () => sidebarOverlay.classList.add('hidden'), { once: true });
     }
 }
 
