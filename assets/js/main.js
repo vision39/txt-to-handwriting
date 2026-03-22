@@ -555,3 +555,27 @@ darkModeToggle.addEventListener('click', () => {
         drawBlankCanvas(el.ctx, el.canvas);
     }
 });
+
+// autosaving to local storage
+
+window.addEventListener("DOMContentLoaded", () => {
+    const editor = document.getElementById("textInput");
+
+    // Load saved data
+    const saved = localStorage.getItem("savedText");
+    if (saved) {
+        editor.innerHTML = saved;
+    }
+
+    // Function for saving
+    function handleAutoSave() {
+        if (editor.innerHTML.trim() === "") {
+            localStorage.removeItem("savedText");
+        } else {
+            localStorage.setItem("savedText", editor.innerHTML);
+        }
+    }
+
+    // Attach event
+    editor.addEventListener("input", handleAutoSave);
+});
