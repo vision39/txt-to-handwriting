@@ -16,6 +16,7 @@
     <title>Text to Handwriting Converter – Free Handwriting Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Indie+Flower&family=Kalam:wght@300;400;700&family=Shadows+Into+Light&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -191,20 +192,17 @@
                     <button id="resetLayoutBtn" class="text-gray-400 hover:text-gray-600 transition-colors hidden" title="Reset dragged positions">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                     </button>
-                    <button id="downloadPDFBtn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded transition-colors flex items-center gap-1 shadow-sm opacity-50 cursor-not-allowed" disabled>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        <span id="downloadPDFBtnText">Download As PDF</span>
-                    </button>
                     <div class="relative inline-block text-left" id="downloadDropdownContainer">
                         <button id="downloadBtn" class="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-1.5 px-3 rounded transition-colors flex items-center gap-1 shadow-sm opacity-50 cursor-not-allowed" disabled>
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            <span id="downloadBtnText">Download As Image</span>
-                            <svg id="downloadDropdownIcon" class="hidden ml-1 opacity-80" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <span id="downloadBtnText">Export</span>
+                            <svg id="downloadDropdownIcon" class="ml-1 opacity-80" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                         </button>
-                        <div id="downloadMenu" class="hidden origin-top-right absolute right-0 mt-2 w-44 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                        <div id="downloadMenu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                             <div class="py-1">
-                                <button id="downloadCurrentBtn" class="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium">Download Current Page</button>
-                                <button id="downloadAllBtn" class="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium border-t border-gray-100">Download All Pages</button>
+                                <button id="downloadPDFBtn" class="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium">Save as PDF</button>
+                                <button id="downloadCurrentBtn" class="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium border-t border-gray-100">Save Image (Current Page)</button>
+                                <button id="downloadAllBtn" class="block w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium border-t border-gray-100">Save Image (All Pages as ZIP)</button>
                             </div>
                         </div>
                     </div>

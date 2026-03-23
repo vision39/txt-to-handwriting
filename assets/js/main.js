@@ -51,12 +51,10 @@ const el = {
   downloadDropdownContainer: document.getElementById('downloadDropdownContainer'),
   downloadBtn: document.getElementById('downloadBtn'),
   downloadBtnText: document.getElementById('downloadBtnText'),
-  downloadDropdownIcon: document.getElementById('downloadDropdownIcon'),
   downloadMenu: document.getElementById('downloadMenu'),
   downloadCurrentBtn: document.getElementById('downloadCurrentBtn'),
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadPDFBtn: document.getElementById('downloadPDFBtn'),
-  downloadPDFBtnText: document.getElementById('downloadPDFBtnText'),
 
   // Editor toolbar
   btnUnderline: document.getElementById('btnUnderline'),
@@ -177,9 +175,7 @@ function renderCanvas() {
 function updatePaginationUI() {
   if (!state.isCanvasGenerated || state.totalPages <= 1) {
     el.paginationUI.classList.add('hidden');
-    // Hide dropdown elements for single page
-    if (el.downloadDropdownIcon) el.downloadDropdownIcon.classList.add('hidden');
-    if (el.downloadMenu) el.downloadMenu.classList.add('hidden');
+    if (el.downloadAllBtn) el.downloadAllBtn.classList.add('hidden');
     return;
   }
   
@@ -189,8 +185,7 @@ function updatePaginationUI() {
   el.prevPageBtn.disabled = state.currentPage === 0;
   el.nextPageBtn.disabled = state.currentPage >= state.totalPages - 1;
 
-  // Show dropdown arrow if multiple pages
-  if (el.downloadDropdownIcon) el.downloadDropdownIcon.classList.remove('hidden');
+  if (el.downloadAllBtn) el.downloadAllBtn.classList.remove('hidden');
 }
 
 /**
@@ -246,9 +241,7 @@ function generateCanvas() {
   state.currentPage = 0; // Reset to page 1 on fresh generation
 
   el.downloadBtn.disabled = false;
-  el.downloadPDFBtn.disabled = false;
   el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-  el.downloadPDFBtn.classList.remove('opacity-50', 'cursor-not-allowed');
   el.resetLayoutBtn.classList.remove('hidden');
 
   syncTextState();
@@ -270,14 +263,7 @@ document.addEventListener('click', (e) => {
 // Download button (main)
 el.downloadBtn.addEventListener('click', () => {
   if (!state.isCanvasGenerated) return;
-  
-  if (state.totalPages > 1) {
-    // Toggle dropdown
-    el.downloadMenu.classList.toggle('hidden');
-  } else {
-    // Single page download
-    downloadCanvasAsImage(el.canvas);
-  }
+  el.downloadMenu.classList.toggle('hidden');
 });
 
 // Dropdown item: Download Current
@@ -293,7 +279,7 @@ if (el.downloadCurrentBtn) {
 if (el.downloadAllBtn) {
   el.downloadAllBtn.addEventListener('click', async () => {
     el.downloadMenu.classList.add('hidden');
-    if (!state.isCanvasGenerated) return;
+    if (!state.isCanvasGenerated || typeof JSZip === 'undefined') return;
 
     const originalPage = state.currentPage;
     const origDownloadText = el.downloadBtnText.textContent;
@@ -303,20 +289,31 @@ if (el.downloadAllBtn) {
     el.generateBtn.disabled = true;
     el.textInput.contentEditable = 'false';
     el.downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    el.downloadBtnText.textContent = "Downloading...";
+    el.downloadBtnText.textContent = "Zipping...";
 
     try {
-      const timestamp = Date.now(); // Use a single timestamp for the batch
+      const zip = new JSZip();
       for (let i = 0; i < state.totalPages; i++) {
         state.currentPage = i;
         renderCanvas();
 
-        // Wait for canvas to repaint and to space out downloads to avoid browser blocking
+        // Wait for canvas to repaint
         await new Promise(r => setTimeout(r, 250));
 
-        // Note: assumes downloadCanvasAsImage takes (canvas, pageNum, timestamp)
-        downloadCanvasAsImage(el.canvas, i + 1, timestamp);
+        const dataUrl = el.canvas.toDataURL('image/jpeg', 0.9);
+        const data = dataUrl.split(',')[1];
+        zip.file(`handwritten-page-${i + 1}.jpg`, data, { base64: true });
       }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `handwritten-notes-${Date.now()}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error creating ZIP:", err);
     } finally {
       // Restore UI state safely
       state.currentPage = originalPage;
@@ -336,7 +333,6 @@ if (el.downloadPDFBtn) {
     el.downloadMenu.classList.add('hidden');
     if (!state.isCanvasGenerated) return;
 
-    
     const pdfDoc = new jsPDF({
       unit: 'pt',
       format: [state.pageArea.w + PAPER_PADDING_LEFT + PAPER_PADDING_RIGHT, 
@@ -345,7 +341,7 @@ if (el.downloadPDFBtn) {
     });
 
     const originalPage = state.currentPage;
-    const origDownloadText = el.downloadPDFBtnText.textContent;
+    const origDownloadText = el.downloadPDFBtn.textContent;
 
     // Disable button and other interactive elements to prevent state corruption
     el.downloadPDFBtn.disabled = true;
@@ -353,8 +349,7 @@ if (el.downloadPDFBtn) {
     el.generateBtn.disabled = true;
     el.textInput.contentEditable = 'false';
     el.downloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    el.downloadPDFBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    el.downloadPDFBtnText.textContent = "Downloading...";
+    el.downloadPDFBtn.textContent = "Saving...";
 
     try {
       for (let i = 0; i < state.totalPages; i++) {
@@ -371,9 +366,8 @@ if (el.downloadPDFBtn) {
       pdfDoc.save(`handwritten-note-${Date.now()}.pdf`);
       state.currentPage = originalPage;
       renderCanvas();
-      el.downloadPDFBtnText.textContent = origDownloadText;
+      el.downloadPDFBtn.textContent = origDownloadText;
       el.downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-      el.downloadPDFBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       el.downloadBtn.disabled = false;
       el.downloadPDFBtn.disabled = false;
       el.generateBtn.disabled = false;
@@ -381,6 +375,8 @@ if (el.downloadPDFBtn) {
     }
   });
 }
+
+
 
 
 // Ink colour picker (global)
