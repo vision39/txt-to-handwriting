@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/vision39/text-to-handwriting/compare/v1.4.0...v1.4.1) (2026-04-06)
+
+
+### Bug Fixes
+
+* auto render on refresh ([a30f305](https://github.com/vision39/text-to-handwriting/commit/a30f3053e90c9fa46ab3e358daabb8eb04747252))
+
 ## [1.4.0](https://github.com/vision39/text-to-handwriting/compare/v1.3.0...v1.4.0) (2026-04-06)
 
 
