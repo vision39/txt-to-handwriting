@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.0](https://github.com/vision39/txt-to-handwriting/compare/v1.2.0...v1.3.0) (2026-03-23)
+
+
+### Features
+
+* Add PDF Download Button ([#24](https://github.com/vision39/txt-to-handwriting/issues/24)) ([9bf18f9](https://github.com/vision39/txt-to-handwriting/commit/9bf18f94bc8b9333634541d2ce8a73306d9a3a20))
+* added zip download ([194c59b](https://github.com/vision39/txt-to-handwriting/commit/194c59bc8a4f04680c7df42537d87e2d372aeb94))
+
+
+### Bug Fixes
+
+* Edit Area in Mobile View ([088b125](https://github.com/vision39/txt-to-handwriting/commit/088b12523232f1d9fd00bfc0a33516127310609b))
+* Edit Area in Mobile View ([#34](https://github.com/vision39/txt-to-handwriting/issues/34)) ([03ae079](https://github.com/vision39/txt-to-handwriting/commit/03ae079f5d080a87f3dc54c1f20d66c764eedfb0))
+* Improve mobile responsiveness ([#33](https://github.com/vision39/txt-to-handwriting/issues/33)) ([0f875d2](https://github.com/vision39/txt-to-handwriting/commit/0f875d27ed4db3c999ee95a4a74cf2ba4dd1d5b7))
+* sitemap ([dd9c7b7](https://github.com/vision39/txt-to-handwriting/commit/dd9c7b76af6b2a7ff5b7d9676c90c617f4f9d0cc))
+* UI ([0d1e301](https://github.com/vision39/txt-to-handwriting/commit/0d1e30132c9ddf77f05d6b62b05844448e84a39b))
+
 ## [1.2.0](https://github.com/vision39/txt-to-handwriting/compare/v1.1.1...v1.2.0) (2026-03-21)
 
 
