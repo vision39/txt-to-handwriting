@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/vision39/text-to-handwriting/compare/v1.3.0...v1.4.0) (2026-04-06)
+
+
+### Features
+
+* enhance SEO with social meta tags, font loading optimization, title banner, and structured FAQ schema ([4c69952](https://github.com/vision39/text-to-handwriting/commit/4c699528bc69676a2ab9fe36b29a30d73008c09c))
+* implement canvas rendering engine for text layout, styling, and pagination ([7b79552](https://github.com/vision39/text-to-handwriting/commit/7b795522e52667b0cfafad25c606080a4ad8b583))
+
 ## [1.3.0](https://github.com/vision39/txt-to-handwriting/compare/v1.2.0...v1.3.0) (2026-03-23)
 
 
